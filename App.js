@@ -1,17 +1,17 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import HomePage from './HomePage';
 import Levels from './Levels';
+import GameScreen from './GameScreen';
 
 const Stack = createStackNavigator();
 
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Home" component={HomePage} />
+      <Stack.Navigator>
         <Stack.Screen name="Levels" component={Levels} />
+        <Stack.Screen name="GameScreen" component={GameScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

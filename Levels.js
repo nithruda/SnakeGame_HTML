@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 const Levels = ({ navigation }) => {
   const chooseDifficulty = (level) => {
-    navigation.navigate('GameScreen', { difficulty: level });
+    navigation.navigate('GameScreen', { difficulty: level }); // Pass difficulty
   };
 
   return (
