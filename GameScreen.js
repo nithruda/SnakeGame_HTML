@@ -1,103 +1,209 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useRef, useState, useEffect } from "react";
+import { StyleSheet, Text, View, StatusBar, TouchableOpacity, Dimensions } from "react-native";
+import { GameEngine } from "react-native-game-engine";
+import Constants from "./Constants";
+import GameLoop from "./GameLoop";
+import Food from "./Components/Food";
+import Head from "./Components/Head";
+import Tail from "./Components/Tail";
+import Levels from "./Levels"; // Import Levels component
 
-const { width, height } = Dimensions.get('window');
-const GRID_SIZE = 10; // Smaller grid for better visibility
-const CELL_SIZE = Math.min(width, height) / (GRID_SIZE + 2);
-const ALPHABETS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-const generateFood = () => ({
-  x: Math.floor(Math.random() * GRID_SIZE),
-  y: Math.floor(Math.random() * GRID_SIZE),
-  letter: ALPHABETS[Math.floor(Math.random() * ALPHABETS.length)],
-});
+const getRandomPositionWithinBounds = () => {
+  const x = Math.floor(Math.random() * Constants.GRID_SIZE);
+  const y = Math.floor(Math.random() * Constants.GRID_SIZE);
+  return [x, y];
+};
 
-const GameScreen = () => {
-  const [snake, setSnake] = useState([{ x: 5, y: 5 }]);
-  const [food, setFood] = useState(generateFood());
-  const [targetLetter, setTargetLetter] = useState(food.letter);
-  const [gameOver, setGameOver] = useState(false);
+export default function GameScreen() {
+  const engine = useRef(null);
+  const [isGameRunning, setIsGameRunning] = useState(false);
+  const [isGameStarted, setIsGameStarted] = useState(false);
+  const [currentFood, setCurrentFood] = useState(alphabet[Math.floor(Math.random() * alphabet.length)]);
+  const [score, setScore] = useState(0);
+  const [wrong, setWrong] = useState(0);
+  const [tail, setTail] = useState([]);
+  const [difficulty, setDifficulty] = useState(null);
+  const [isGameOver, setIsGameOver] = useState(false);
 
   useEffect(() => {
-    setTargetLetter(food.letter);
-  }, [food]);
-
-  const moveSnake = () => {
-    if (gameOver) return;
-    let newSnake = [...snake];
-    let head = { ...newSnake[0] };
-
-    if (head.x < food.x) head.x++;
-    else if (head.x > food.x) head.x--;
-    else if (head.y < food.y) head.y++;
-    else if (head.y > food.y) head.y--;
-
-    // Check collision with itself
-    if (newSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
-      setGameOver(true);
-      return;
+    if (difficulty) {
+      startGame(difficulty); // Start game once difficulty is selected
     }
+  }, [difficulty]);
 
-    newSnake.unshift(head);
-
-    if (head.x === food.x && head.y === food.y) {
-      setFood(generateFood());
-    } else {
-      newSnake.pop();
-    }
-
-    setSnake(newSnake);
+  const startGame = (level) => {
+    setIsGameStarted(true);
+    setIsGameRunning(true);
+    setDifficulty(level);
+    resetGame(level);
   };
 
-  const handleLetterPress = (letter) => {
-    if (letter === targetLetter) {
-      moveSnake();
+  const resetGame = (level) => {
+    setScore(0);
+    setWrong(0);
+    setTail([]);
+    setIsGameOver(false);
+    setIsGameRunning(true);
+
+    const newFood = alphabet[Math.floor(Math.random() * alphabet.length)];
+    setCurrentFood(newFood);
+    const newFoodPosition = getRandomPositionWithinBounds();
+    const headStartPosition = getRandomPositionWithinBounds();
+
+    if (engine.current) {
+      engine.current.swap({
+        head: {
+          position: headStartPosition,
+          size: Constants.CELL_SIZE,
+          updateFrequency: getSnakeSpeed(level),
+          nextMove: getSnakeSpeed(level),
+          xspeed: 7,
+          yspeed: 0,
+          moving: false,
+          currentFood: newFood,
+          renderer: <Head />,
+        },
+        food: {
+          position: newFoodPosition,
+          size: Constants.CELL_SIZE,
+          currentFood: newFood,
+          renderer: <Food />,
+        },
+        tail: {
+          size: Constants.CELL_SIZE,
+          elements: tail,
+          renderer: <Tail />,
+        },
+      });
+      engine.current.dispatch({ type: "reset-food", position: newFoodPosition, newFood });
     }
   };
+
+  const getSnakeSpeed = (level) => {
+    switch (level) {
+      case "Easy":
+        return 40;
+      case "Medium":
+        return 25;
+      case "Hard":
+        return 10;
+      default:
+        return 30;
+    }
+  };
+
+  const handleGameEvent = (event) => {
+    if (event.type === "game-over") {
+      setIsGameRunning(false);
+      setIsGameOver(true);
+    }
+  };
+
+  const boardSize = width * 0.6;
+
+  // ✅ Show Levels screen if game hasn't started
+  if (!isGameStarted) {
+    return <Levels onSelectDifficulty={setDifficulty} />;
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Snake Game</Text>
-      {gameOver && <Text style={styles.gameOverText}>Game Over! Restart the app.</Text>}
-      <View style={[styles.gameBoard, { width: CELL_SIZE * GRID_SIZE, height: CELL_SIZE * GRID_SIZE }]}>
-        {[...Array(GRID_SIZE)].map((_, row) => (
-          <View key={row} style={styles.row}>
-            {[...Array(GRID_SIZE)].map((_, col) => {
-              let isSnake = snake.some(segment => segment.x === col && segment.y === row);
-              let isFood = food.x === col && food.y === row;
-              return (
-                <View key={col} style={[styles.cell, isSnake ? styles.snake : isFood ? styles.food : null, { width: CELL_SIZE, height: CELL_SIZE }]}>
-                  {isFood && <Text style={styles.foodText}>{food.letter}</Text>}
-                </View>
-              );
-            })}
+      <StatusBar hidden={true} />
+      {!isGameOver && (
+        <>
+          <View style={styles.scoreContainer}>
+            <Text style={styles.scoreText}>Score: {score}</Text>
+            <Text style={styles.scoreText}>Wrong: {wrong}</Text>
           </View>
-        ))}
-      </View>
-      <View style={styles.keyboard}>
-        {ALPHABETS.map((letter) => (
-          <TouchableOpacity key={letter} style={styles.key} onPress={() => handleLetterPress(letter)}>
-            <Text style={styles.keyText}>{letter}</Text>
+          <View style={styles.gameArea}>
+            <GameEngine
+              ref={engine}
+              style={[styles.board, { width: boardSize, height: boardSize }]}
+              entities={{
+                head: {
+                  position: [0, 0],
+                  size: Constants.CELL_SIZE,
+                  updateFrequency: getSnakeSpeed(difficulty),
+                  nextMove: getSnakeSpeed(difficulty),
+                  xspeed: 0,
+                  yspeed: 0,
+                  moving: false,
+                  currentFood: currentFood,
+                  renderer: <Head />,
+                },
+                food: {
+                  position: getRandomPositionWithinBounds(),
+                  size: Constants.CELL_SIZE,
+                  currentFood: currentFood,
+                  renderer: <Food />,
+                },
+                tail: {
+                  size: Constants.CELL_SIZE,
+                  elements: tail,
+                  renderer: <Tail />,
+                },
+              }}
+              systems={[GameLoop]}
+              running={isGameRunning}
+              onEvent={handleGameEvent}
+            />
+          </View>
+        </>
+      )}
+      {isGameOver && (
+        <View style={styles.restartContainer}>
+          <Text style={styles.gameover}>Game Over!</Text>
+          <TouchableOpacity style={styles.restartButton} onPress={() => resetGame(difficulty)}>
+            <Text style={styles.restartButtonText}>Restart Game</Text>
           </TouchableOpacity>
-        ))}
-      </View>
+        </View>
+      )}
     </View>
   );
-};
+}
+
+const { width, height } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e1e2e' },
-  title: { fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 10 },
-  gameOverText: { fontSize: 20, color: 'red', marginBottom: 10 },
-  gameBoard: { flexDirection: 'column', borderWidth: 2, borderColor: 'white', backgroundColor: '#222' },
-  row: { flexDirection: 'row' },
-  cell: { borderWidth: 1, borderColor: '#444', justifyContent: 'center', alignItems: 'center' },
-  snake: { backgroundColor: 'green' },
-  food: { backgroundColor: 'red' },
-  foodText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  keyboard: { flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
-  key: { width: 30, height: 30, margin: 5, backgroundColor: '#555', justifyContent: 'center', alignItems: 'center', borderRadius: 5 },
-  keyText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  container: {
+    flex: 1,
+    backgroundColor: "#f6e0b5",
+  },
+  scoreContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  scoreText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#721c24",
+  },
+  gameArea: {
+    alignItems: "center",
+  },
+  restartContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  gameover: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#d9534f",
+    marginBottom: 10,
+  },
+  restartButton: {
+    backgroundColor: "#5cb85c",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  restartButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
 });
 
-export default GameScreen;

@@ -1,21 +1,17 @@
-import React from 'react';
+/*import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-const Levels = ({ navigation }) => {
-  const chooseDifficulty = (level) => {
-    navigation.navigate('GameScreen', { difficulty: level }); // Pass difficulty
-  };
-
+const Levels = ({ onSelectDifficulty }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Select Difficulty Level</Text>
-      <TouchableOpacity style={styles.button} onPress={() => chooseDifficulty('Easy')}>
+      <TouchableOpacity style={styles.button} onPress={() => onSelectDifficulty('Easy')}>
         <Text style={styles.buttonText}>Easy</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={() => chooseDifficulty('Medium')}>
+      <TouchableOpacity style={styles.button} onPress={() => onSelectDifficulty('Medium')}>
         <Text style={styles.buttonText}>Medium</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={() => chooseDifficulty('Hard')}>
+      <TouchableOpacity style={styles.button} onPress={() => onSelectDifficulty('Hard')}>
         <Text style={styles.buttonText}>Hard</Text>
       </TouchableOpacity>
     </View>
@@ -27,31 +23,25 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f4f4f4',
+    backgroundColor: '#f6e0b5',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333',
   },
   button: {
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    backgroundColor: '#333',
-    borderRadius: 8,
-    marginVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
+    backgroundColor: '#FF8B17',
+    padding: 15,
+    margin: 10,
+    borderRadius: 10,
   },
   buttonText: {
-    color: '#fff',
     fontSize: 18,
+    color: '#ffffff',
     fontWeight: 'bold',
   },
 });
 
 export default Levels;
+*/
